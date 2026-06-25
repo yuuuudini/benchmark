@@ -1,0 +1,22 @@
+git:
+  repositories:
+    - name: algorithms
+      repo-url: https://github.com/company/backend.git
+      repo-path: ./repos/algorithms
+      branch: main
+
+    - name: datasets
+      repo-url: https://github.com/company/frontend.git
+      repo-path: ./repos/datasets
+      branch: main
+
+  default-remote: origin
+  default-token: ${GIT_TOKEN:}
+
+  updater:
+    enabled: true
+    check-interval: 300000 
+
+  webhook:
+    enabled: true
+    secret: ${GITHUB_WEBHOOK_SECRET:}
