@@ -74,18 +74,18 @@ public synchronized Map<String, Object> checkForUpdates(String repoKey, GitPrope
     try (Git git = Git.open(localDir)) {
         Repository repository = git.getRepository();
         
-        // 1. Get the current local commit hash
+        // Get the current local commit hash
         ObjectId localHead = repository.resolve("HEAD");
         String localCommitHash = localHead != null ? localHead.getName() : "UNKNOWN";
 
         log.info("Fetching remote metadata for check on {}...", repoKey);
-        // 2. Fetch remote changes to local cache WITHOUT merging them into the workspace
+        // Fetch remote changes to local cache WITHOUT merging them into the workspace
         git.fetch()
            .setRemote("origin")
            .setTransportConfigCallback(getSshTransportCallback())
            .call();
 
-        // 3. Resolve the remote tracking branch commit hash (e.g., refs/remotes/origin/main)
+        // Resolve the remote tracking branch commit hash (e.g., refs/remotes/origin/main)
         String remoteBranchRef = "refs/remotes/origin/" + config.getBranch();
         ObjectId remoteHead = repository.resolve(remoteBranchRef);
         

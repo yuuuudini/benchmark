@@ -36,7 +36,7 @@ public class BatchQueueManager {
     @Async("pipelineTaskExecutor")
     @Transactional
     public void processBatchSequentially(Long batchId) {
-        // 1. Transaction Isolation Guard: Poll until the web thread transaction completely commits
+        // Transaction Isolation Guard: Poll until the web thread transaction completely commits
         ExecutionBatch batch = null;
         int retries = 0;
         
@@ -60,13 +60,13 @@ public class BatchQueueManager {
             return;
         }
 
-        // 2. Flip master batch state from PENDING to RUNNING
+        // Flip master batch state from PENDING to RUNNING
         batch.setStatus(RunStatus.RUNNING);
         batchRepository.save(batch);
 
         boolean sequenceBroken = false;
 
-        // 3. Loop through child tasks (Sorted automatically by sequenceOrder via @OrderBy)
+        // Loop through child tasks (Sorted automatically by sequenceOrder via @OrderBy)
         for (ExecutionRun run : batch.getRuns()) {
             
             // If an earlier script crashed, cleanly skip subsequent sequence files
@@ -81,7 +81,7 @@ public class BatchQueueManager {
                     batchId, run.getSequenceOrder() + 1, batch.getRuns().size());
             
             try {
-                // 4. Pass execution to orchestrator synchronously on this background thread loop
+                // Pass execution to orchestrator synchronously on this background thread loop
                 orchestrator.executeSingleRunSynchronously(run);
                 
                 // Re-fetch state directly to verify if the python process exited with success or error
@@ -99,7 +99,7 @@ public class BatchQueueManager {
             }
         }
 
-        // 5. Finalize the master batch pipeline state record
+        // Finalize the master batch pipeline state record
         batch.setStatus(sequenceBroken ? RunStatus.FAILED : RunStatus.COMPLETED);
         batch.setEndedAt(Instant.now());
         batchRepository.save(batch);

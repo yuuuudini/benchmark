@@ -7,18 +7,15 @@ public class BatchTriggerRequest {
     
     private List<TriggerRunRequest> jobs = new ArrayList<>();
 
-    // Default Constructor
     public BatchTriggerRequest() {
     }
 
-    // Parameterized Constructor
     public BatchTriggerRequest(List<TriggerRunRequest> jobs) {
         if (jobs != null) {
             this.jobs = jobs;
         }
     }
 
-    // Getters and Setters
     public List<TriggerRunRequest> getJobs() {
         return jobs;
     }

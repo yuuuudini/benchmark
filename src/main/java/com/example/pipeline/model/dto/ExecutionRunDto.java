@@ -14,7 +14,6 @@ public class ExecutionRunDto {
     private Long durationMs;
     private String algorithmName;
     private String errorMessage;
-    // Note: Excluded raw clob/blob logs from default DTO listings for performance optimization
 
     public ExecutionRunDto() {
     }
