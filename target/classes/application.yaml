@@ -1,0 +1,50 @@
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  application:
+    name: git-python-orchestrator
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orchestrator
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate.jdbc.batch_size: 25
+      hibernate.order_inserts: true
+      hibernate.order_updates: true
+
+orchestrator:
+  scheduler:
+    cron-expression: "0 */15 * * * *" # Every 15 minutes
+    enabled: true
+  concurrency:
+    max-pool-size: 4
+    queue-capacity: 100
+  execution:
+    timeout-minutes: 30
+    python-executable: ${PYTHON_PATH:python3}
+  git:
+    ssh-private-key-path: ${SSH_KEY_PATH:~/.ssh/id_rsa}
+    repositories:
+      dataset:
+        url: git@github.com:org/dataset-repo.git
+        branch: main
+        local-path: /var/orchestrator/repos/dataset
+      scripts:
+        url: git@github.com:org/scripts-repo.git
+        branch: release/v1
+        local-path: /var/orchestrator/repos/scripts
