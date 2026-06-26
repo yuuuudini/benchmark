@@ -1,8 +1,12 @@
 package com.example.pipeline.domain.entity;
 
 import com.example.pipeline.domain.enumeration.RunStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 @Entity
 @Table(name = "execution_runs", indexes = {
@@ -51,14 +55,31 @@ public class ExecutionRun {
     @Column(name = "error_message")
     private String errorMessage;
 
+    // New structural batching additions
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "batch_id")
+    @JsonIgnore
+    private ExecutionBatch batch;
+
+    @Column(name = "sequence_order")
+    private Integer sequenceOrder;
+
+    // --- ADDED PARAMETERS MAPPING ---
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "execution_run_parameters", joinColumns = @JoinColumn(name = "run_id"))
+    @MapKeyColumn(name = "param_key", length = 100)
+    @Column(name = "param_value", length = 255)
+    private Map<String, String> parameters = new HashMap<>();
+
     // Default Constructor
     public ExecutionRun() {
     }
 
-    // All-Args Constructor
+    // Updated All-Args Constructor
     public ExecutionRun(Long id, RunStatus status, String datasetCommitHash, String scriptCommitHash,
             String triggeredBy, Instant startedAt, Instant endedAt, Long durationMs, String algorithmName,
-            String stdoutLog, String stderrLog, String errorMessage) {
+            String stdoutLog, String stderrLog, String errorMessage, ExecutionBatch batch, Integer sequenceOrder,
+            Map<String, String> parameters) {
         this.id = id;
         this.status = status;
         this.datasetCommitHash = datasetCommitHash;
@@ -71,6 +92,9 @@ public class ExecutionRun {
         this.stdoutLog = stdoutLog;
         this.stderrLog = stderrLog;
         this.errorMessage = errorMessage;
+        this.batch = batch;
+        this.sequenceOrder = sequenceOrder;
+        this.parameters = parameters != null ? parameters : new HashMap<>();
     }
 
     // Static entry point to initiate builder flow
@@ -92,6 +116,9 @@ public class ExecutionRun {
         private String stdoutLog;
         private String stderrLog;
         private String errorMessage;
+        private ExecutionBatch batch;
+        private Integer sequenceOrder;
+        private Map<String, String> parameters;
 
         public Builder id(Long id) {
             this.id = id;
@@ -153,10 +180,25 @@ public class ExecutionRun {
             return this;
         }
 
+        public Builder batch(ExecutionBatch batch) {
+            this.batch = batch;
+            return this;
+        }
+
+        public Builder sequenceOrder(Integer sequenceOrder) {
+            this.sequenceOrder = sequenceOrder;
+            return this;
+        }
+
+        public Builder parameters(Map<String, String> parameters) {
+            this.parameters = parameters;
+            return this;
+        }
+
         public ExecutionRun build() {
             return new ExecutionRun(id, status, datasetCommitHash, scriptCommitHash, triggeredBy, 
                                     startedAt, endedAt, durationMs, algorithmName, stdoutLog, 
-                                    stderrLog, errorMessage);
+                                    stderrLog, errorMessage, batch, sequenceOrder, parameters);
         }
     }
 
@@ -196,4 +238,13 @@ public class ExecutionRun {
 
     public String getErrorMessage() { return errorMessage; }
     public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+
+    public ExecutionBatch getBatch() { return batch; }
+    public void setBatch(ExecutionBatch batch) { this.batch = batch; }
+
+    public Integer getSequenceOrder() { return sequenceOrder; }
+    public void setSequenceOrder(Integer sequenceOrder) { this.sequenceOrder = sequenceOrder; }
+
+    public Map<String, String> getParameters() { return parameters; }
+    public void setParameters(Map<String, String> parameters) { this.parameters = parameters; }
 }

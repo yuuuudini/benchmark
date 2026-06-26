@@ -3,10 +3,12 @@ package com.example.pipeline.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableAsync; // Added import
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.util.concurrent.Executor;
 
 @Configuration
+@EnableAsync
 public class AsyncConfig {
 
     @Value("${orchestrator.concurrency.max-pool-size:4}")

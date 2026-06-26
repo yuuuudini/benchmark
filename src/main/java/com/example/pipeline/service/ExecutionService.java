@@ -33,7 +33,6 @@ public class ExecutionService {
         command.add(scriptPath);
         
         extraParams.forEach((k, v) -> {
-            System.out.println(k + " " + (k.equals("data-path") ?  datasetPath + "/" + v : v));
             command.add("--" + k);
             command.add(k.equals("data-path") ?  datasetPath + "/" + v : v);
         });

@@ -64,6 +64,7 @@ public class PipelineOrchestrator {
                 .triggeredBy(initiator)
                 .startedAt(Instant.now())
                 .algorithmName(scriptName)
+                .parameters(parameters)
                 .build();
 
         run = runRepository.save(run);
@@ -117,5 +118,65 @@ public class PipelineOrchestrator {
         state.setLastProcessedCommit(commitHash);
         state.setUpdatedAt(Instant.now());
         repositoryStateRepository.save(state);
+    }
+
+    /**
+     * Executes a single pipeline run synchronously within the current background worker thread.
+     * Used by the sequential batch manager to guarantee precise chronological order.
+     */
+    public void executeSingleRunSynchronously(ExecutionRun run) {
+        // 1. Initialize execution metadata tracking
+        run.setStatus(RunStatus.RUNNING);
+        run.setStartedAt(Instant.now());
+        runRepository.save(run);
+
+        // 2. Fetch baseline repository root paths from system configurations
+        File scriptRepoDir = new File(gitProperties.getRepositories().getScripts().getLocalPath());
+        File datasetRepoDir = new File(gitProperties.getRepositories().getDataset().getLocalPath());
+
+        // 3. Isolate file mappings cleanly to ignore nested input directory prefixes
+        String scriptFileName = run.getAlgorithmName() != null ? run.getAlgorithmName() : "main_execution.py";
+        File absoluteScriptFile = new File(scriptRepoDir, new File(scriptFileName).getName());
+        
+        // Pass the base dataset repository path down; the executePythonScript layer 
+        // will dynamically append sub-files if specialized extra parameters exist.
+        String contextDataPath = datasetRepoDir.getAbsolutePath();
+
+        try {
+            log.info("Batch Execution Pipeline: Running {} synchronously on dataset path {}", 
+                    absoluteScriptFile.getName(), contextDataPath);
+
+            // 4. FIXED: Pull runtime variables out of the database collection instead of empty map maps
+            Map<String, String> contextParams = run.getParameters();
+
+            ExecutionService.ExecutionResult result = executionService.executePythonScript(
+                    absoluteScriptFile.getAbsolutePath(), 
+                    contextDataPath, 
+                    contextParams
+            );
+
+            // 5. Collect console logs, duration metrics, and process termination codes
+            run.setStdoutLog(result.stdout());
+            run.setStderrLog(result.stderr());
+            run.setDurationMs(result.durationMs());
+            run.setEndedAt(Instant.now());
+            
+            if (result.success()) {
+                run.setStatus(RunStatus.COMPLETED);
+            } else {
+                run.setStatus(RunStatus.FAILED);
+                run.setErrorMessage("Python runtime process exited with an error code status.");
+                log.error("Sync script execution failed for Run ID {}. Stderr: {}", run.getId(), result.stderr());
+            }
+        } catch (Exception e) {
+            // 6. Handle unexpected OS architecture environment crashes or interruptions
+            run.setStatus(RunStatus.FAILED);
+            run.setErrorMessage("Pipeline runtime engine failure: " + e.getMessage());
+            run.setEndedAt(Instant.now());
+            log.error("Critical error while executing Run ID {} synchronously", run.getId(), e);
+        } finally {
+            // 7. Flush the operational outcome straight to your database
+            runRepository.save(run);
+        }
     }
 }
