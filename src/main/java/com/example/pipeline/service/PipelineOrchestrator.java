@@ -14,6 +14,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.File;
 import java.time.Instant;
 import java.util.Map;
 
@@ -29,7 +30,7 @@ public class PipelineOrchestrator {
     @Autowired
     private ExecutionRunRepository runRepository;
     @Autowired
-    private RepositoryStateRepository repositoryStateRepository; // Added dependency
+    private RepositoryStateRepository repositoryStateRepository;
     @Autowired
     private GitProperties gitProperties;
 
@@ -50,12 +51,12 @@ public class PipelineOrchestrator {
         }
 
         // 3. Delegate to async execution pipeline
-        triggerPipeline(dataHash, scriptHash, "SYSTEM_SCHEDULER", "main_execution.py");
+        triggerPipeline(dataHash, scriptHash, "SYSTEM_SCHEDULER", "main_execution.py", Map.of());
     }
 
     @Async("pipelineTaskExecutor")
     @Transactional
-    public void triggerPipeline(String dataHash, String scriptHash, String initiator, String scriptName) {
+    public void triggerPipeline(String dataHash, String scriptHash, String initiator, String scriptName, Map<String, String> parameters) {
         ExecutionRun run = ExecutionRun.builder()
                 .status(RunStatus.RUNNING)
                 .datasetCommitHash(dataHash)
@@ -67,13 +68,22 @@ public class PipelineOrchestrator {
 
         run = runRepository.save(run);
 
-        String contextScriptPath = gitProperties.getRepositories().getScripts().getLocalPath() + "/" + scriptName;
-        String contextDataPath = gitProperties.getRepositories().getDataset().getLocalPath();
+        // --- FIXED: Safe Path Resolution Layer ---
+        // 1. Get repository root base directories
+        File scriptRepoDir = new File(gitProperties.getRepositories().getScripts().getLocalPath());
+        File datasetRepoDir = new File(gitProperties.getRepositories().getDataset().getLocalPath());
+
+        // 2. .getName() isolates just "test.py" or "main_execution.py", throwing away redundant prefixes
+        File absoluteScriptFile = new File(scriptRepoDir, new File(scriptName).getName());
+
+        String contextScriptPath = absoluteScriptFile.getAbsolutePath();
+        String contextDataPath = datasetRepoDir.getAbsolutePath();
+        // -----------------------------------------
 
         try {
             // 4. Call ExecutionService to run native ProcessBuilder
             ExecutionService.ExecutionResult result = executionService.executePythonScript(
-                    contextScriptPath, contextDataPath, Map.of()
+                    contextScriptPath, contextDataPath, parameters
             );
 
             run.setStdoutLog(result.stdout());

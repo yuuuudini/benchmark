@@ -36,7 +36,7 @@ public class PipelineController {
         String scriptToRun = (request.getScriptName() != null) ? request.getScriptName() : "main_execution.py";
         
         // Triggers async pipeline task executor loop
-        orchestrator.triggerPipeline(dataHash, scriptHash, "REST_API_USER", scriptToRun);
+        orchestrator.triggerPipeline(dataHash, scriptHash, "REST_API_USER", scriptToRun, request.getParameters());
         return ResponseEntity.accepted().body("Pipeline execution run scheduled successfully via user demand.");
     }
 

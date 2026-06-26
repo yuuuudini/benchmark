@@ -20,7 +20,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect # <-- FIXED: Explicit modern dialect mapping
     hibernate:
-      ddl-auto: update # <-- FIXED: Changed from 'create-drop' to prevent deleting your data on every restart
+      ddl-auto: create-drop 
     show-sql: false
     properties:
       hibernate.jdbc.batch_size: 25
@@ -43,8 +43,8 @@ orchestrator:
       dataset:
         url: git@github.com:yuuuudini/datasets.git
         branch: main
-        local-path: ./repos/datasets
+        local-path: repos/datasets
       scripts:
         url: git@github.com:yuuuudini/algorithms.git
         branch: main
-        local-path: ./repos/algorithms
+        local-path: repos/algorithms

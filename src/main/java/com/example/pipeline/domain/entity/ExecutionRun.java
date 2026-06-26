@@ -41,11 +41,11 @@ public class ExecutionRun {
     private String algorithmName;
 
     @Lob
-    @Column(name = "stdout_log")
+    @Column(name = "stdout_log", columnDefinition = "LONGTEXT") 
     private String stdoutLog;
 
     @Lob
-    @Column(name = "stderr_log")
+    @Column(name = "stderr_log", columnDefinition = "LONGTEXT") 
     private String stderrLog;
     
     @Column(name = "error_message")

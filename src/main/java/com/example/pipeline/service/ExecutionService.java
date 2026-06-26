@@ -31,12 +31,11 @@ public class ExecutionService {
         List<String> command = new ArrayList<>();
         command.add(pythonExecutable);
         command.add(scriptPath);
-        command.add("--data-path");
-        command.add(datasetPath);
         
         extraParams.forEach((k, v) -> {
+            System.out.println(k + " " + (k.equals("data-path") ?  datasetPath + "/" + v : v));
             command.add("--" + k);
-            command.add(v);
+            command.add(k.equals("data-path") ?  datasetPath + "/" + v : v);
         });
 
         ProcessBuilder processBuilder = new ProcessBuilder(command);
